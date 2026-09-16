@@ -1,122 +1,540 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useCallback, useRef } from 'react';
+import {
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  BackgroundVariant,
+} from '@xyflow/react';
+import type {
+  Connection,
+  Edge,
+  Node,
+  ReactFlowInstance,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+import { TriggerNode } from './components/nodes/TriggerNode';
+import { ActionNode } from './components/nodes/ActionNode';
+import { LogicNode } from './components/nodes/LogicNode';
+import { DataNode } from './components/nodes/DataNode';
+import { Header } from './components/Header';
+import { NodePalette } from './components/NodePalette';
+import { NodeInspector } from './components/NodeInspector';
+import { ExecutionConsole } from './components/ExecutionConsole';
+import { DagValidationModal } from './components/DagValidationModal';
+import { TemplatesModal } from './components/TemplatesModal';
+
+import { DEMO_TEMPLATES } from './utils/demoWorkflows';
+import type { WorkflowTemplate } from './utils/demoWorkflows';
+import { validateDag } from './utils/dagValidator';
+import { sounds } from './utils/soundEffects';
+import type {
+  WorkflowNodeData,
+  ValidationResult,
+  ExecutionSummary,
+  ExecutionLogEntry,
+  NodeType,
+} from './types/workflow';
+
+const nodeTypes = {
+  triggerNode: TriggerNode,
+  actionNode: ActionNode,
+  logicNode: LogicNode,
+  dataNode: DataNode,
+};
+
+export default function App() {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<Node<WorkflowNodeData>, Edge> | null>(null);
+
+  // Initial template: Architecture Document Base Demo Workflow
+  const [workflowName, setWorkflowName] = useState<string>(DEMO_TEMPLATES[0].name);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowNodeData>>(DEMO_TEMPLATES[0].nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(DEMO_TEMPLATES[0].edges);
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isActive, setIsActive] = useState<boolean>(true);
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+
+  // Modals & Drawers
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [isValidateModalOpen, setIsValidateModalOpen] = useState<boolean>(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState<boolean>(false);
+  const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(false);
+  const [executionSummary, setExecutionSummary] = useState<ExecutionSummary | null>(null);
+
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
+
+  // Connecting edges
+  const onConnect = useCallback(
+    (params: Connection) => {
+      sounds.playConnect();
+      const isTrueBranch = params.sourceHandle === 'true';
+      const isFalseBranch = params.sourceHandle === 'false';
+
+      const newEdge: Edge = {
+        ...params,
+        id: `e-${params.source}-${params.sourceHandle || 'def'}-${params.target}`,
+        type: 'smoothstep',
+        animated: true,
+        style: {
+          stroke: isTrueBranch ? '#10b981' : isFalseBranch ? '#f43f5e' : '#06b6d4',
+          strokeWidth: isTrueBranch ? 2.5 : 2,
+        },
+        label: isTrueBranch ? 'TRUE' : isFalseBranch ? 'FALSE' : undefined,
+        labelStyle: isTrueBranch
+          ? { fill: '#10b981', fontWeight: 700, fontSize: 11 }
+          : isFalseBranch
+          ? { fill: '#f43f5e', fontWeight: 700, fontSize: 11 }
+          : undefined,
+        labelBgStyle: isTrueBranch
+          ? { fill: '#0a1612', fillOpacity: 0.9, stroke: '#10b981', rx: 6 }
+          : isFalseBranch
+          ? { fill: '#1f0d14', fillOpacity: 0.9, stroke: '#f43f5e', rx: 6 }
+          : undefined,
+      };
+
+      setEdges(eds => addEdge(newEdge, eds));
+    },
+    [setEdges]
+  );
+
+  // Node selection
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    sounds.playClick();
+    setSelectedNodeId(node.id);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
+
+  // Drag and Drop from NodePalette
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      if (!reactFlowInstance || !reactFlowWrapper.current) return;
+
+      const rawData = event.dataTransfer.getData('application/reactflow');
+      if (!rawData) return;
+
+      const item = JSON.parse(rawData);
+      sounds.playClick();
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const newNode: Node<WorkflowNodeData> = {
+        id: `node-${item.type.toLowerCase()}-${Date.now().toString().slice(-4)}`,
+        type: item.reactFlowType,
+        position,
+        data: {
+          label: item.name,
+          name: item.name,
+          type: item.type as NodeType,
+          category: item.category,
+          description: item.description,
+          config: item.defaultConfig,
+          status: 'PENDING',
+        },
+      };
+
+      setNodes(nds => nds.concat(newNode));
+      setSelectedNodeId(newNode.id);
+    },
+    [reactFlowInstance, setNodes]
+  );
+
+  // Add node from clicking the '+' in palette
+  const handleAddNodeFromPalette = (item: {
+    type: NodeType;
+    reactFlowType: string;
+    category: WorkflowNodeData['category'];
+    name: string;
+    description: string;
+    defaultConfig: Record<string, unknown>;
+  }) => {
+    sounds.playClick();
+    const position = {
+      x: 300 + Math.random() * 200,
+      y: 150 + Math.random() * 200,
+    };
+
+    const newNode: Node<WorkflowNodeData> = {
+      id: `node-${item.type.toLowerCase()}-${Date.now().toString().slice(-4)}`,
+      type: item.reactFlowType,
+      position,
+      data: {
+        label: item.name,
+        name: item.name,
+        type: item.type,
+        category: item.category,
+        description: item.description,
+        config: item.defaultConfig,
+        status: 'PENDING',
+      },
+    };
+
+    setNodes(nds => nds.concat(newNode));
+    setSelectedNodeId(newNode.id);
+  };
+
+  // Node Mutations
+  const handleUpdateNodeData = (id: string, partialData: Partial<WorkflowNodeData>) => {
+    setNodes(nds =>
+      nds.map(node => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...partialData,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  };
+
+  const handleDeleteNode = (id: string) => {
+    sounds.playClick();
+    setNodes(nds => nds.filter(n => n.id !== id));
+    setEdges(eds => eds.filter(e => e.source !== id && e.target !== id));
+    if (selectedNodeId === id) setSelectedNodeId(null);
+  };
+
+  const handleDuplicateNode = (node: Node<WorkflowNodeData>) => {
+    sounds.playClick();
+    const duplicatedNode: Node<WorkflowNodeData> = {
+      ...node,
+      id: `${node.id}-copy-${Date.now().toString().slice(-3)}`,
+      position: {
+        x: node.position.x + 30,
+        y: node.position.y + 30,
+      },
+      data: {
+        ...node.data,
+        name: `${node.data.name} (Copy)`,
+        status: 'PENDING',
+      },
+    };
+    setNodes(nds => nds.concat(duplicatedNode));
+    setSelectedNodeId(duplicatedNode.id);
+  };
+
+  // DAG Validation
+  const handleValidateDag = () => {
+    const res = validateDag(nodes, edges);
+    setValidationResult(res);
+    setIsValidateModalOpen(true);
+    if (res.valid) {
+      sounds.playSuccess();
+    } else {
+      sounds.playError();
+    }
+  };
+
+  // Template Switching
+  const handleSelectTemplate = (template: WorkflowTemplate) => {
+    setWorkflowName(template.name);
+    setNodes(template.nodes);
+    setEdges(template.edges);
+    setSelectedNodeId(null);
+    setExecutionSummary(null);
+    setTimeout(() => {
+      reactFlowInstance?.fitView({ padding: 0.2 });
+    }, 100);
+  };
+
+  // Export JSON (Matches backend WorkflowGraph schema)
+  const handleExportJson = () => {
+    sounds.playClick();
+    const exportGraph = {
+      name: workflowName,
+      exportedAt: new Date().toISOString(),
+      nodes: nodes.map(n => ({
+        id: n.id,
+        name: n.data.name,
+        type: n.data.type,
+        category: n.data.category,
+        position: n.position,
+        config: n.data.config,
+        credentialsRef: n.data.credentialsRef,
+      })),
+      edges: edges.map(e => ({
+        id: e.id,
+        sourceNodeId: e.source,
+        targetNodeId: e.target,
+        sourceHandle: e.sourceHandle || 'default',
+        targetHandle: e.targetHandle || 'default',
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(exportGraph, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${workflowName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Interactive Execution Simulation Engine
+  const runSimulation = async () => {
+    const val = validateDag(nodes, edges);
+    if (!val.valid) {
+      setValidationResult(val);
+      setIsValidateModalOpen(true);
+      sounds.playError();
+      return;
+    }
+
+    setIsSimulating(true);
+    setIsConsoleOpen(true);
+
+    const execId = `exec-${Date.now().toString(36)}`;
+    const startTime = Date.now();
+    const logs: ExecutionLogEntry[] = [];
+
+    // Reset all node statuses to PENDING
+    setNodes(nds => nds.map(n => ({ ...n, data: { ...n.data, status: 'PENDING', activeBranch: undefined } })));
+
+    // Find trigger node
+    const triggerNode = nodes.find(n => n.data.category === 'TRIGGER');
+    if (!triggerNode) {
+      setIsSimulating(false);
+      return;
+    }
+
+    let currentNodeId: string | null = triggerNode.id;
+    let currentPayload: Record<string, unknown> = {
+      event: 'payment_intent.succeeded',
+      amount: 15400,
+      currency: 'USD',
+      customer: { email: 'enterprise@apexcorp.com', tier: 'ENTERPRISE' },
+      orderId: 'ORD-90412',
+    };
+
+    while (currentNodeId) {
+      const nodeToExecute = nodes.find(n => n.id === currentNodeId);
+      if (!nodeToExecute) break;
+
+      // Mark running
+      const runningNodeId: string = currentNodeId;
+      setNodes(nds =>
+        nds.map(n => (n.id === runningNodeId ? { ...n, data: { ...n.data, status: 'RUNNING' } } : n))
+      );
+      sounds.playStepRun();
+
+      // Delay for realistic visual execution progress
+      await new Promise(r => setTimeout(r, 600));
+
+      const duration = Math.floor(Math.random() * 35) + 20;
+      let activeBranch: 'true' | 'false' | 'default' = 'default';
+      let stepOutput: Record<string, unknown> = { ...currentPayload };
+
+      if (nodeToExecute.data.type === 'DATA_TRANSFORM') {
+        stepOutput = {
+          orderId: currentPayload.orderId,
+          amount: currentPayload.amount,
+          email: 'enterprise@apexcorp.com',
+          isHighValue: Number(currentPayload.amount) >= 10000,
+        };
+      } else if (nodeToExecute.data.type === 'ACTION_HTTP') {
+        stepOutput = {
+          riskScore: 0.02,
+          status: 'VERIFIED',
+          customerEmail: currentPayload.email,
+          verifiedAt: new Date().toISOString(),
+        };
+      } else if (nodeToExecute.data.type === 'LOGIC_IF') {
+        const amount = Number(currentPayload.amount || 15400);
+        const conditionPasses = amount > 10000;
+        activeBranch = conditionPasses ? 'true' : 'false';
+        stepOutput = {
+          condition: '$json.amount > 10000',
+          evaluated: conditionPasses,
+          selectedBranch: activeBranch.toUpperCase(),
+        };
+      } else if (nodeToExecute.data.type === 'ACTION_SLACK') {
+        stepOutput = {
+          sent: true,
+          channel: '#vip-sales-alerts',
+          messageId: `msg_${Date.now().toString(36)}`,
+        };
+      } else if (nodeToExecute.data.type === 'ACTION_EMAIL') {
+        stepOutput = {
+          dispatched: true,
+          recipient: currentPayload.email,
+          delivered: true,
+        };
+      }
+
+      currentPayload = { ...currentPayload, ...stepOutput };
+
+      // Mark Succeeded
+      setNodes(nds =>
+        nds.map(n =>
+          n.id === runningNodeId
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  status: 'SUCCEEDED',
+                  lastRunDurationMs: duration,
+                  lastOutput: stepOutput,
+                  activeBranch,
+                },
+              }
+            : n
+        )
+      );
+
+      logs.push({
+        nodeId: nodeToExecute.id,
+        nodeName: nodeToExecute.data.name,
+        nodeType: nodeToExecute.data.type,
+        status: 'SUCCEEDED',
+        durationMs: duration,
+        timestamp: new Date().toLocaleTimeString(),
+        inputPayload: currentPayload,
+        outputPayload: stepOutput,
+      });
+
+      setExecutionSummary({
+        executionId: execId,
+        status: 'RUNNING',
+        startTime,
+        logs: [...logs],
+      });
+
+      // Advance along outgoing edge
+      const outgoingEdges: Edge[] = edges.filter((e: Edge) => e.source === runningNodeId);
+      if (outgoingEdges.length === 0) {
+        currentNodeId = null;
+      } else if (nodeToExecute.data.type === 'LOGIC_IF') {
+        // Follow specifically the evaluated branch handle!
+        const matchingEdge: Edge | undefined = outgoingEdges.find((e: Edge) => e.sourceHandle === activeBranch);
+        currentNodeId = matchingEdge ? matchingEdge.target : null;
+      } else {
+        currentNodeId = outgoingEdges[0].target;
+      }
+    }
+
+    const totalDuration = Date.now() - startTime;
+    setExecutionSummary({
+      executionId: execId,
+      status: 'SUCCEEDED',
+      startTime,
+      endTime: Date.now(),
+      totalDurationMs: totalDuration,
+      logs,
+    });
+
+    setIsSimulating(false);
+    sounds.playSuccess();
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Studio Header */}
+      <Header
+        workflowName={workflowName}
+        onRenameWorkflow={setWorkflowName}
+        onSimulate={runSimulation}
+        isSimulating={isSimulating}
+        onValidate={handleValidateDag}
+        isActive={isActive}
+        onToggleActive={() => setIsActive(!isActive)}
+        onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+        onExportJson={handleExportJson}
+        nodeCount={nodes.length}
+        edgeCount={edges.length}
+      />
 
-      <div className="ticks"></div>
+      {/* Main Studio Body: Palette + Canvas + Inspector */}
+      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+        {/* Left: Node Palette */}
+        <NodePalette onAddNode={handleAddNodeFromPalette} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Center Canvas */}
+        <div ref={reactFlowWrapper} style={{ flex: 1, height: '100%', position: 'relative' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onInit={setReactFlowInstance}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            nodeTypes={nodeTypes}
+            fitView
+            snapToGrid
+            snapGrid={[15, 15]}
+            defaultEdgeOptions={{
+              type: 'smoothstep',
+              animated: true,
+            }}
+          >
+            <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
+            <Controls showInteractive={false} />
+            <MiniMap
+              nodeStrokeColor="#06b6d4"
+              nodeColor="#192336"
+              maskColor="rgba(7, 9, 14, 0.75)"
+              zoomable
+              pannable
+            />
+          </ReactFlow>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          {/* Bottom Execution Console */}
+          <ExecutionConsole
+            execution={executionSummary}
+            isOpen={isConsoleOpen}
+            onToggleOpen={() => setIsConsoleOpen(!isConsoleOpen)}
+            onClose={() => setIsConsoleOpen(false)}
+            onRerun={runSimulation}
+          />
+        </div>
+
+        {/* Right Inspector Drawer */}
+        <NodeInspector
+          selectedNode={selectedNode}
+          onClose={() => setSelectedNodeId(null)}
+          onUpdateNodeData={handleUpdateNodeData}
+          onDeleteNode={handleDeleteNode}
+          onDuplicateNode={handleDuplicateNode}
+        />
+      </div>
+
+      {/* DAG Validation Diagnostic Modal */}
+      <DagValidationModal
+        result={validationResult}
+        isOpen={isValidateModalOpen}
+        onClose={() => setIsValidateModalOpen(false)}
+      />
+
+      {/* Blueprint Templates Modal */}
+      <TemplatesModal
+        isOpen={isTemplatesModalOpen}
+        onClose={() => setIsTemplatesModalOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
+    </div>
+  );
 }
-
-export default App

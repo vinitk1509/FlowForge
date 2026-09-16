@@ -1,111 +1,208 @@
+@import '@xyflow/react/dist/style.css';
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Base Obsidian Surface Palette */
+  --bg-primary: #07090e;
+  --bg-secondary: #0d121c;
+  --bg-surface: #131b2a;
+  --bg-surface-elevated: #192336;
+  --bg-glass: rgba(13, 18, 28, 0.75);
+  --bg-glass-elevated: rgba(22, 31, 48, 0.85);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Border & Separation */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-highlight: rgba(255, 255, 255, 0.22);
+
+  /* Text Hierarchy */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+
+  /* Category Accents & Glows */
+  --color-trigger: #06b6d4;
+  --color-trigger-glow: rgba(6, 182, 212, 0.35);
+  --color-trigger-bg: rgba(6, 182, 212, 0.08);
+
+  --color-action: #f59e0b;
+  --color-action-glow: rgba(245, 158, 11, 0.35);
+  --color-action-bg: rgba(245, 158, 11, 0.08);
+
+  --color-logic: #8b5cf6;
+  --color-logic-glow: rgba(139, 92, 246, 0.35);
+  --color-logic-bg: rgba(139, 92, 246, 0.08);
+
+  --color-data: #10b981;
+  --color-data-glow: rgba(16, 185, 129, 0.35);
+  --color-data-bg: rgba(16, 185, 129, 0.08);
+
+  /* Status Colors */
+  --status-pending: #64748b;
+  --status-ready: #38bdf8;
+  --status-running: #fbbf24;
+  --status-succeeded: #10b981;
+  --status-failed: #f43f5e;
+  --status-skipped: #94a3b8;
+
+  /* Elevations & Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 25px rgba(6, 182, 212, 0.2);
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-highlight);
+}
+
+/* React Flow Overrides */
+.react-flow {
+  background: radial-gradient(circle at 50% 50%, #0d1424 0%, #07090e 100%) !important;
+}
+
+.react-flow__background {
+  opacity: 0.7;
+}
+
+.react-flow__minimap {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.react-flow__controls {
+  background: var(--bg-glass-elevated) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 3px !important;
+  display: flex !important;
+  gap: 2px;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  color: var(--text-secondary) !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-primary) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+/* Custom Edge Animation */
+.react-flow__edge-path {
+  stroke-dasharray: 6;
+  animation: edgeFlow 20s linear infinite;
+}
+
+@keyframes edgeFlow {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/* Node Handle Customization */
+.react-flow__handle {
+  width: 11px !important;
+  height: 11px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--bg-primary) !important;
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease !important;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.4) !important;
+  box-shadow: 0 0 10px var(--color-trigger) !important;
+}
+
+.handle-trigger {
+  background-color: var(--color-trigger) !important;
+}
+.handle-action {
+  background-color: var(--color-action) !important;
+}
+.handle-logic {
+  background-color: var(--color-logic) !important;
+}
+.handle-data {
+  background-color: var(--color-data) !important;
+}
+.handle-true {
+  background-color: #10b981 !important;
+  border-color: #064e3b !important;
+}
+.handle-false {
+  background-color: #f43f5e !important;
+  border-color: #881337 !important;
+}
+
+/* Pulse animation for node execution */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+    border-color: rgba(251, 191, 36, 0.8);
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+    border-color: #fbbf24;
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.node-running {
+  animation: pulseGlow 1.2s infinite ease-in-out !important;
 }
