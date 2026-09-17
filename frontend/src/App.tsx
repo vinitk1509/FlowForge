@@ -27,11 +27,16 @@ import { NodeInspector } from './components/NodeInspector';
 import { ExecutionConsole } from './components/ExecutionConsole';
 import { DagValidationModal } from './components/DagValidationModal';
 import { TemplatesModal } from './components/TemplatesModal';
+import { LandingPage } from './components/landing/LandingPage';
+import { AuthModal } from './components/auth/AuthModal';
+import { Dashboard } from './components/dashboard/Dashboard';
 
 import { DEMO_TEMPLATES } from './utils/demoWorkflows';
 import type { WorkflowTemplate } from './utils/demoWorkflows';
 import { validateDag } from './utils/dagValidator';
 import { sounds } from './utils/soundEffects';
+import { AuthService, DEMO_USER } from './services/api';
+import type { UserProfile, AuthSession } from './types/auth';
 import type {
   WorkflowNodeData,
   ValidationResult,
@@ -50,6 +55,12 @@ const nodeTypes = {
 export default function App() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<Node<WorkflowNodeData>, Edge> | null>(null);
+
+  // App View Routing & Auth State
+  const [currentView, setCurrentView] = useState<'LANDING' | 'DASHBOARD' | 'STUDIO'>('LANDING');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => AuthService.getSession()?.user || null);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
 
   // Initial template: Architecture Document Base Demo Workflow
   const [workflowName, setWorkflowName] = useState<string>(DEMO_TEMPLATES[0].name);
@@ -291,6 +302,54 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Authentication Handlers
+  const handleAuthSuccess = (session: AuthSession) => {
+    setCurrentUser(session.user);
+    setCurrentView('DASHBOARD');
+  };
+
+  const handleLogout = () => {
+    sounds.playClick();
+    AuthService.clearSession();
+    setCurrentUser(null);
+    setCurrentView('LANDING');
+  };
+
+  // Dashboard Workflow Navigation
+  const handleOpenWorkflowInStudio = (_workflowId: string) => {
+    // Default load template 0
+    handleSelectTemplate(DEMO_TEMPLATES[0]);
+    setCurrentView('STUDIO');
+  };
+
+  const handleInstantiateTemplate = (template: WorkflowTemplate) => {
+    handleSelectTemplate(template);
+    setCurrentView('STUDIO');
+  };
+
+  const handleCreateBlankWorkflow = () => {
+    setWorkflowName('Untitled Workflow');
+    const blankTrigger: Node<WorkflowNodeData> = {
+      id: 'trigger-1',
+      type: 'triggerNode',
+      position: { x: 200, y: 200 },
+      data: {
+        label: 'Webhook Trigger',
+        name: 'Webhook Trigger',
+        type: 'TRIGGER_WEBHOOK',
+        category: 'TRIGGER',
+        description: 'Receives external webhook requests',
+        status: 'READY',
+        config: { webhookPath: '/webhooks/v1/custom' },
+      },
+    };
+    setNodes([blankTrigger]);
+    setEdges([]);
+    setSelectedNodeId(blankTrigger.id);
+    setExecutionSummary(null);
+    setCurrentView('STUDIO');
+  };
+
   // Interactive Execution Simulation Engine
   const runSimulation = async () => {
     const val = validateDag(nodes, edges);
@@ -448,93 +507,141 @@ export default function App() {
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Studio Header */}
-      <Header
-        workflowName={workflowName}
-        onRenameWorkflow={setWorkflowName}
-        onSimulate={runSimulation}
-        isSimulating={isSimulating}
-        onValidate={handleValidateDag}
-        isActive={isActive}
-        onToggleActive={() => setIsActive(!isActive)}
-        onOpenTemplates={() => setIsTemplatesModalOpen(true)}
-        onExportJson={handleExportJson}
-        nodeCount={nodes.length}
-        edgeCount={edges.length}
-      />
+    <>
+      {/* 1. LANDING PAGE VIEW */}
+      {currentView === 'LANDING' && (
+        <LandingPage
+          onOpenAuth={mode => {
+            sounds.playClick();
+            setAuthModalMode(mode || 'LOGIN');
+            setAuthModalOpen(true);
+          }}
+          onEnterStudio={() => {
+            sounds.playClick();
+            setCurrentView('STUDIO');
+          }}
+          onOpenDashboard={() => {
+            sounds.playClick();
+            setCurrentView('DASHBOARD');
+          }}
+          isLoggedIn={!!currentUser}
+        />
+      )}
 
-      {/* Main Studio Body: Palette + Canvas + Inspector */}
-      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
-        {/* Left: Node Palette */}
-        <NodePalette onAddNode={handleAddNodeFromPalette} />
+      {/* 2. DASHBOARD VIEW */}
+      {currentView === 'DASHBOARD' && (
+        <Dashboard
+          user={currentUser || DEMO_USER}
+          onLogout={handleLogout}
+          onOpenWorkflowInStudio={handleOpenWorkflowInStudio}
+          onInstantiateTemplate={handleInstantiateTemplate}
+          onCreateBlankWorkflow={handleCreateBlankWorkflow}
+        />
+      )}
 
-        {/* Center Canvas */}
-        <div ref={reactFlowWrapper} style={{ flex: 1, height: '100%', position: 'relative' }}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onInit={setReactFlowInstance}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            nodeTypes={nodeTypes}
-            fitView
-            snapToGrid
-            snapGrid={[15, 15]}
-            defaultEdgeOptions={{
-              type: 'smoothstep',
-              animated: true,
+      {/* 3. STUDIO CANVAS VIEW */}
+      {currentView === 'STUDIO' && (
+        <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Studio Header */}
+          <Header
+            workflowName={workflowName}
+            onRenameWorkflow={setWorkflowName}
+            onSimulate={runSimulation}
+            isSimulating={isSimulating}
+            onValidate={handleValidateDag}
+            isActive={isActive}
+            onToggleActive={() => setIsActive(!isActive)}
+            onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+            onExportJson={handleExportJson}
+            nodeCount={nodes.length}
+            edgeCount={edges.length}
+            onBackToDashboard={() => {
+              sounds.playClick();
+              setCurrentView('DASHBOARD');
             }}
-          >
-            <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
-            <Controls showInteractive={false} />
-            <MiniMap
-              nodeStrokeColor="#06b6d4"
-              nodeColor="#192336"
-              maskColor="rgba(7, 9, 14, 0.75)"
-              zoomable
-              pannable
-            />
-          </ReactFlow>
+          />
 
-          {/* Bottom Execution Console */}
-          <ExecutionConsole
-            execution={executionSummary}
-            isOpen={isConsoleOpen}
-            onToggleOpen={() => setIsConsoleOpen(!isConsoleOpen)}
-            onClose={() => setIsConsoleOpen(false)}
-            onRerun={runSimulation}
+          {/* Main Studio Body: Palette + Canvas + Inspector */}
+          <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+            {/* Left: Node Palette */}
+            <NodePalette onAddNode={handleAddNodeFromPalette} />
+
+            {/* Center Canvas */}
+            <div ref={reactFlowWrapper} style={{ flex: 1, height: '100%', position: 'relative' }}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onInit={setReactFlowInstance}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onNodeClick={onNodeClick}
+                onPaneClick={onPaneClick}
+                nodeTypes={nodeTypes}
+                fitView
+                snapToGrid
+                snapGrid={[15, 15]}
+                defaultEdgeOptions={{
+                  type: 'smoothstep',
+                  animated: true,
+                }}
+              >
+                <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
+                <Controls showInteractive={false} />
+                <MiniMap
+                  nodeStrokeColor="#06b6d4"
+                  nodeColor="#192336"
+                  maskColor="rgba(7, 9, 14, 0.75)"
+                  zoomable
+                  pannable
+                />
+              </ReactFlow>
+
+              {/* Bottom Execution Console */}
+              <ExecutionConsole
+                execution={executionSummary}
+                isOpen={isConsoleOpen}
+                onToggleOpen={() => setIsConsoleOpen(!isConsoleOpen)}
+                onClose={() => setIsConsoleOpen(false)}
+                onRerun={runSimulation}
+              />
+            </div>
+
+            {/* Right Inspector Drawer */}
+            <NodeInspector
+              selectedNode={selectedNode}
+              onClose={() => setSelectedNodeId(null)}
+              onUpdateNodeData={handleUpdateNodeData}
+              onDeleteNode={handleDeleteNode}
+              onDuplicateNode={handleDuplicateNode}
+            />
+          </div>
+
+          {/* DAG Validation Diagnostic Modal */}
+          <DagValidationModal
+            result={validationResult}
+            isOpen={isValidateModalOpen}
+            onClose={() => setIsValidateModalOpen(false)}
+          />
+
+          {/* Blueprint Templates Modal */}
+          <TemplatesModal
+            isOpen={isTemplatesModalOpen}
+            onClose={() => setIsTemplatesModalOpen(false)}
+            onSelectTemplate={handleSelectTemplate}
           />
         </div>
+      )}
 
-        {/* Right Inspector Drawer */}
-        <NodeInspector
-          selectedNode={selectedNode}
-          onClose={() => setSelectedNodeId(null)}
-          onUpdateNodeData={handleUpdateNodeData}
-          onDeleteNode={handleDeleteNode}
-          onDuplicateNode={handleDuplicateNode}
-        />
-      </div>
-
-      {/* DAG Validation Diagnostic Modal */}
-      <DagValidationModal
-        result={validationResult}
-        isOpen={isValidateModalOpen}
-        onClose={() => setIsValidateModalOpen(false)}
+      {/* Global Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        initialMode={authModalMode}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={handleAuthSuccess}
       />
-
-      {/* Blueprint Templates Modal */}
-      <TemplatesModal
-        isOpen={isTemplatesModalOpen}
-        onClose={() => setIsTemplatesModalOpen(false)}
-        onSelectTemplate={handleSelectTemplate}
-      />
-    </div>
+    </>
   );
 }

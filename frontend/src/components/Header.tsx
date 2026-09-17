@@ -9,6 +9,7 @@ import {
   FolderOpen,
   Check,
   Edit2,
+  ArrowLeft,
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
@@ -24,6 +25,7 @@ interface HeaderProps {
   onExportJson: () => void;
   nodeCount: number;
   edgeCount: number;
+  onBackToDashboard?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   onExportJson,
   nodeCount,
   edgeCount,
+  onBackToDashboard,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(workflowName);
@@ -73,7 +76,29 @@ export const Header: React.FC<HeaderProps> = ({
       }}
     >
       {/* Left: Brand & Workflow Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {onBackToDashboard && (
+          <button
+            onClick={onBackToDashboard}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 8,
+              color: '#cbd5e1',
+              padding: '6px 10px',
+              fontSize: 12,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={14} />
+            <span>Dashboard</span>
+          </button>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
             style={{
