@@ -10,8 +10,11 @@ import {
   Check,
   Edit2,
   ArrowLeft,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
+import { useTheme } from '../context/ThemeContext';
 
 interface HeaderProps {
   workflowName: string;
@@ -42,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   edgeCount,
   onBackToDashboard,
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(workflowName);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -64,8 +68,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       style={{
         height: 62,
-        background: 'linear-gradient(90deg, rgba(7, 9, 14, 0.98) 0%, rgba(13, 18, 28, 0.95) 100%)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--bg-glass)',
+        borderBottom: '1px solid var(--border-subtle)',
         backdropFilter: 'blur(16px)',
         display: 'flex',
         alignItems: 'center',
@@ -73,6 +77,8 @@ export const Header: React.FC<HeaderProps> = ({
         padding: '0 20px',
         zIndex: 20,
         position: 'relative',
+        color: 'var(--text-primary)',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease',
       }}
     >
       {/* Left: Brand & Workflow Title */}
@@ -81,10 +87,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onBackToDashboard}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: 8,
-              color: '#cbd5e1',
+              color: 'var(--text-secondary)',
               padding: '6px 10px',
               fontSize: 12,
               fontWeight: 600,
@@ -116,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em', color: '#ffffff' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
                 FLOW<span style={{ color: '#06b6d4' }}>FORGE</span>
               </span>
               <span
@@ -125,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   background: 'rgba(6, 182, 212, 0.15)',
-                  color: '#38bdf8',
+                  color: '#0284c7',
                   padding: '2px 5px',
                   borderRadius: 4,
                   border: '1px solid rgba(6, 182, 212, 0.3)',
@@ -137,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div style={{ width: 1, height: 26, background: 'rgba(255, 255, 255, 0.1)' }} />
+        <div style={{ width: 1, height: 26, background: 'var(--border-subtle)' }} />
 
         {/* Workflow Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -150,10 +156,10 @@ export const Header: React.FC<HeaderProps> = ({
                 onKeyDown={e => e.key === 'Enter' && handleSaveName()}
                 autoFocus
                 style={{
-                  background: 'rgba(255,255,255,0.06)',
+                  background: 'var(--bg-surface)',
                   border: '1px solid #06b6d4',
                   borderRadius: 6,
-                  color: '#ffffff',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 600,
                   padding: '4px 8px',
@@ -166,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
                   background: '#06b6d4',
                   border: 'none',
                   borderRadius: 6,
-                  color: '#07090e',
+                  color: '#ffffff',
                   padding: '5px',
                   cursor: 'pointer',
                   display: 'flex',
@@ -190,10 +196,9 @@ export const Header: React.FC<HeaderProps> = ({
                 borderRadius: 6,
                 transition: 'background 0.15s ease',
               }}
-              className="hover-bg"
             >
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{workflowName}</span>
-              <Edit2 size={12} color="#64748b" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{workflowName}</span>
+              <Edit2 size={12} color="var(--text-muted)" />
             </div>
           )}
 
@@ -201,9 +206,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div
             style={{
               fontSize: 11,
-              color: '#94a3b8',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.07)',
+              color: 'var(--text-secondary)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
               padding: '3px 8px',
               borderRadius: 6,
               display: 'flex',
@@ -211,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           >
             <span>{nodeCount} nodes</span>
-            <span style={{ color: '#475569' }}>•</span>
+            <span style={{ color: 'var(--text-dim)' }}>•</span>
             <span>{edgeCount} connections</span>
           </div>
         </div>
@@ -223,10 +228,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onOpenTemplates}
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 8,
-            color: '#cbd5e1',
+            color: 'var(--text-secondary)',
             padding: '7px 12px',
             fontSize: 12,
             fontWeight: 600,
@@ -237,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
             transition: 'all 0.15s ease',
           }}
         >
-          <FolderOpen size={14} color="#38bdf8" />
+          <FolderOpen size={14} color="#06b6d4" />
           <span>Templates</span>
         </button>
 
@@ -245,10 +250,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onValidate}
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 8,
-            color: '#cbd5e1',
+            color: 'var(--text-secondary)',
             padding: '7px 12px',
             fontSize: 12,
             fontWeight: 600,
@@ -263,15 +268,34 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Validate DAG</span>
         </button>
 
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label="Toggle theme mode"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 8,
+            color: theme === 'dark' ? '#fbbf24' : '#6366f1',
+            padding: '7px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+
         {/* Sound toggle */}
         <button
           onClick={toggleSound}
           title={soundEnabled ? 'Mute Sounds' : 'Enable Sounds'}
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 8,
-            color: soundEnabled ? '#38bdf8' : '#64748b',
+            color: soundEnabled ? '#06b6d4' : 'var(--text-muted)',
             padding: '7px 10px',
             display: 'flex',
             alignItems: 'center',
@@ -286,10 +310,10 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onExportJson}
           title="Export Workflow JSON"
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 8,
-            color: '#cbd5e1',
+            color: 'var(--text-secondary)',
             padding: '7px 10px',
             display: 'flex',
             alignItems: 'center',
@@ -299,7 +323,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Download size={15} />
         </button>
 
-        <div style={{ width: 1, height: 24, background: 'rgba(255, 255, 255, 0.1)', margin: '0 4px' }} />
+        <div style={{ width: 1, height: 24, background: 'var(--border-subtle)', margin: '0 4px' }} />
 
         {/* Simulate Execution Button */}
         <button
@@ -334,8 +358,8 @@ export const Header: React.FC<HeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.04)',
-            border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+            background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-surface)',
+            border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-subtle)'}`,
             padding: '5px 10px',
             borderRadius: 8,
             cursor: 'pointer',
@@ -347,11 +371,11 @@ export const Header: React.FC<HeaderProps> = ({
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: isActive ? '#10b981' : '#64748b',
+              background: isActive ? '#10b981' : 'var(--text-muted)',
               boxShadow: isActive ? '0 0 8px #10b981' : 'none',
             }}
           />
-          <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#10b981' : '#94a3b8' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#10b981' : 'var(--text-secondary)' }}>
             {isActive ? 'ACTIVE' : 'INACTIVE'}
           </span>
         </div>

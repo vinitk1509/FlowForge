@@ -7,11 +7,14 @@ import {
   ArrowRight,
   LogOut,
   Sparkles,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import type { WorkflowItem, HistoricalRun, ConnectorCredential, UserProfile } from '../../types/auth';
 import type { WorkflowTemplate } from '../../utils/demoWorkflows';
 import { DEMO_TEMPLATES } from '../../utils/demoWorkflows';
 import { sounds } from '../../utils/soundEffects';
+import { useTheme } from '../../context/ThemeContext';
 
 interface DashboardProps {
   user: UserProfile;
@@ -152,6 +155,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onInstantiateTemplate,
   onCreateBlankWorkflow,
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'WORKFLOWS' | 'TEMPLATES' | 'HISTORY' | 'VAULT'>('WORKFLOWS');
   const [workflows, setWorkflows] = useState<WorkflowItem[]>(INITIAL_WORKFLOWS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -171,13 +175,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#07090e', color: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', transition: 'background-color 0.2s ease' }}>
       {/* Top Navbar */}
       <nav
         style={{
           height: 64,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'rgba(13, 18, 28, 0.95)',
+          borderBottom: '1px solid var(--border-subtle)',
+          background: 'var(--bg-glass)',
           backdropFilter: 'blur(16px)',
           display: 'flex',
           alignItems: 'center',
@@ -201,32 +205,54 @@ export const Dashboard: React.FC<DashboardProps> = ({
             >
               <Zap size={18} color="#ffffff" />
             </div>
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em' }}>
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
               FLOW<span style={{ color: '#06b6d4' }}>FORGE</span>
             </span>
           </div>
 
-          <div style={{ width: 1, height: 24, background: 'rgba(255, 255, 255, 0.1)' }} />
+          <div style={{ width: 1, height: 24, background: 'var(--border-subtle)' }} />
 
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: 8,
               padding: '5px 12px',
               fontSize: 12,
             }}
           >
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-            <span style={{ fontWeight: 600, color: '#f1f5f9' }}>Production Workspace</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Production Workspace</span>
           </div>
         </div>
 
         {/* Right Actions & User Profile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle theme mode"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 8,
+              color: theme === 'dark' ? '#fbbf24' : '#6366f1',
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
           <button
             onClick={() => {
               sounds.playClick();
@@ -251,7 +277,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span>New Workflow</span>
           </button>
 
-          <div style={{ width: 1, height: 24, background: 'rgba(255, 255, 255, 0.1)' }} />
+          <div style={{ width: 1, height: 24, background: 'var(--border-subtle)' }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div

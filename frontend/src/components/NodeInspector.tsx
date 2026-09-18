@@ -97,13 +97,15 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         right: 0,
         width: 380,
         height: 'calc(100vh - 62px)',
-        background: 'rgba(13, 18, 28, 0.96)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--bg-glass-elevated)',
+        borderLeft: '1px solid var(--border-subtle)',
         backdropFilter: 'blur(20px)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 15,
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
+        boxShadow: 'var(--shadow-lg)',
+        color: 'var(--text-primary)',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease',
       }}
     >
       {/* Header */}

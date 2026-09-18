@@ -152,12 +152,14 @@ export const NodePalette: React.FC<NodePaletteProps> = ({ onAddNode }) => {
       style={{
         width: 280,
         height: 'calc(100vh - 62px)',
-        background: 'rgba(10, 14, 22, 0.95)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--bg-glass)',
+        borderRight: '1px solid var(--border-subtle)',
         display: 'flex',
         flexDirection: 'column',
         backdropFilter: 'blur(16px)',
         zIndex: 10,
+        color: 'var(--text-primary)',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease',
       }}
     >
       {/* Search Header */}

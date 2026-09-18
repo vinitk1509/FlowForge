@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import {
   ReactFlow,
   MiniMap,
@@ -506,8 +507,20 @@ export default function App() {
     sounds.playSuccess();
   };
 
+  // Handle URL hash changes to automatically bring up the one-page Landing view
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash === '#features' || hash === '#architecture' || hash === '#blueprints') {
+        setCurrentView('LANDING');
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
   return (
-    <>
+    <ThemeProvider>
       {/* 1. LANDING PAGE VIEW */}
       {currentView === 'LANDING' && (
         <LandingPage
@@ -516,8 +529,14 @@ export default function App() {
             setAuthModalMode(mode || 'LOGIN');
             setAuthModalOpen(true);
           }}
-          onEnterStudio={() => {
+          onEnterStudio={(template?: WorkflowTemplate) => {
             sounds.playClick();
+            if (template) {
+              setWorkflowName(template.name);
+              setNodes(template.nodes);
+              setEdges(template.edges);
+              setSelectedNodeId(null);
+            }
             setCurrentView('STUDIO');
           }}
           onOpenDashboard={() => {
@@ -642,6 +661,6 @@ export default function App() {
         onClose={() => setAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
       />
-    </>
+    </ThemeProvider>
   );
 }

@@ -1,6 +1,7 @@
 @import '@xyflow/react/dist/style.css';
 
-:root {
+:root,
+[data-theme="dark"] {
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -10,13 +11,15 @@
   --bg-secondary: #0d121c;
   --bg-surface: #131b2a;
   --bg-surface-elevated: #192336;
-  --bg-glass: rgba(13, 18, 28, 0.75);
-  --bg-glass-elevated: rgba(22, 31, 48, 0.85);
+  --bg-glass: rgba(7, 9, 14, 0.85);
+  --bg-glass-elevated: rgba(19, 27, 42, 0.85);
+  --bg-card: rgba(19, 27, 42, 0.55);
+  --bg-card-hover: rgba(22, 33, 52, 0.75);
 
   /* Border & Separation */
-  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-subtle: rgba(255, 255, 255, 0.08);
   --border-medium: rgba(255, 255, 255, 0.14);
-  --border-highlight: rgba(255, 255, 255, 0.22);
+  --border-highlight: rgba(255, 255, 255, 0.24);
 
   /* Text Hierarchy */
   --text-primary: #f8fafc;
@@ -58,12 +61,71 @@
   /* Transitions */
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-theme: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease;
+}
+
+[data-theme="light"] {
+  /* Crisp Light Surface Palette */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  --bg-glass-elevated: rgba(248, 250, 252, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-card-hover: #ffffff;
+
+  /* Border & Separation */
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-medium: rgba(15, 23, 42, 0.15);
+  --border-highlight: rgba(15, 23, 42, 0.28);
+
+  /* Text Hierarchy */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  /* Category Accents (Tuned for light background contrast) */
+  --color-trigger: #0891b2;
+  --color-trigger-glow: rgba(8, 145, 178, 0.25);
+  --color-trigger-bg: rgba(8, 145, 178, 0.08);
+
+  --color-action: #d97706;
+  --color-action-glow: rgba(217, 119, 6, 0.25);
+  --color-action-bg: rgba(217, 119, 6, 0.08);
+
+  --color-logic: #7c3aed;
+  --color-logic-glow: rgba(124, 58, 237, 0.25);
+  --color-logic-bg: rgba(124, 58, 237, 0.08);
+
+  --color-data: #059669;
+  --color-data-glow: rgba(5, 150, 105, 0.25);
+  --color-data-bg: rgba(5, 150, 105, 0.08);
+
+  /* Status Colors */
+  --status-pending: #94a3b8;
+  --status-ready: #0284c7;
+  --status-running: #d97706;
+  --status-succeeded: #059669;
+  --status-failed: #e11d48;
+  --status-skipped: #64748b;
+
+  /* Elevations & Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 36px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 0 25px rgba(8, 145, 178, 0.15);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html, body, #root {
@@ -77,6 +139,7 @@ html, body, #root {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: var(--transition-theme);
 }
 
 /* Custom Scrollbar */
@@ -98,10 +161,19 @@ html, body, #root {
 /* React Flow Overrides */
 .react-flow {
   background: radial-gradient(circle at 50% 50%, #0d1424 0%, #07090e 100%) !important;
+  transition: background 0.3s ease;
+}
+
+[data-theme="light"] .react-flow {
+  background: radial-gradient(circle at 50% 50%, #e2e8f0 0%, #f8fafc 100%) !important;
 }
 
 .react-flow__background {
   opacity: 0.7;
+}
+
+[data-theme="light"] .react-flow__background {
+  opacity: 0.45;
 }
 
 .react-flow__minimap {
@@ -133,7 +205,7 @@ html, body, #root {
 }
 
 .react-flow__controls-button:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: var(--border-subtle) !important;
   color: var(--text-primary) !important;
 }
 

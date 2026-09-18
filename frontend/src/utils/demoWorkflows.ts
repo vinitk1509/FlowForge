@@ -5,6 +5,8 @@ export interface WorkflowTemplate {
   id: string;
   name: string;
   description: string;
+  category?: string;
+  tags?: string[];
   nodes: Node<WorkflowNodeData>[];
   edges: Edge[];
 }
@@ -14,6 +16,8 @@ export const DEMO_TEMPLATES: WorkflowTemplate[] = [
     id: 'base-demo-workflow',
     name: 'Payment Webhook VIP Routing',
     description: 'High-value transaction triage from Base Architecture Document: Webhook -> Transform -> HTTP Verification -> IF Amount > 10,000 -> Slack VIP / Email',
+    category: 'Finance & Payments',
+    tags: ['Webhook', 'Kahn DAG', 'Slack', 'High Volume'],
     nodes: [
       {
         id: 'node-webhook-1',
@@ -198,6 +202,8 @@ export const DEMO_TEMPLATES: WorkflowTemplate[] = [
     id: 'db-sync-workflow',
     name: 'Scheduled Postgres ETL & Slack Alert',
     description: 'Runs on a 15-minute cron schedule, queries PostgreSQL database, and posts summaries',
+    category: 'Data & ETL',
+    tags: ['Cron', 'PostgreSQL', 'Slack', 'Scheduled'],
     nodes: [
       {
         id: 'node-cron-1',
@@ -266,6 +272,178 @@ export const DEMO_TEMPLATES: WorkflowTemplate[] = [
         animated: true,
         style: { stroke: '#f59e0b', strokeWidth: 2 },
       },
+    ],
+  },
+  {
+    id: 'ai-doc-analysis',
+    name: 'Multi-Stage LLM Retrieval & Synthesis',
+    description: 'Ingests documents via webhook, performs semantic lookup via HTTP, evaluates confidence, and alerts analyst on Slack or stores in DB.',
+    category: 'AI & Machine Learning',
+    tags: ['Webhook', 'AI / LLM', 'Vector Search', 'Dual Branch'],
+    nodes: [
+      {
+        id: 'node-doc-inbound',
+        type: 'triggerNode',
+        position: { x: 60, y: 200 },
+        data: {
+          label: 'Document Webhook',
+          name: 'Inbound PDF Ingest',
+          type: 'TRIGGER_WEBHOOK',
+          category: 'TRIGGER',
+          description: 'Listens for document upload event payload',
+          status: 'READY',
+          config: { webhookPath: '/webhooks/v1/inbound-docs' },
+          lastOutput: { docId: 'DOC-88219', title: 'Q4 Enterprise SLA Contract', pages: 18 },
+        },
+      },
+      {
+        id: 'node-transform-chunk',
+        type: 'dataNode',
+        position: { x: 380, y: 200 },
+        data: {
+          label: 'Transform & Chunk',
+          name: 'Text Parser',
+          type: 'DATA_TRANSFORM',
+          category: 'DATA',
+          description: 'Normalizes text, strips headers, calculates token length',
+          status: 'PENDING',
+          config: { transformCode: 'return { docId: $json.docId, tokens: 4200, status: "CHUNKED" };' },
+        },
+      },
+      {
+        id: 'node-llm-call',
+        type: 'actionNode',
+        position: { x: 700, y: 200 },
+        data: {
+          label: 'LLM Inference API',
+          name: 'Contract Risk Evaluation',
+          type: 'ACTION_HTTP',
+          category: 'ACTION',
+          description: 'POST prompt to OpenAI/Anthropic model endpoint',
+          status: 'PENDING',
+          config: { method: 'POST', url: 'https://api.openai.com/v1/chat/completions' },
+        },
+      },
+      {
+        id: 'node-confidence-check',
+        type: 'logicNode',
+        position: { x: 1040, y: 190 },
+        data: {
+          label: 'IF Condition',
+          name: 'Confidence >= 90%?',
+          type: 'LOGIC_IF',
+          category: 'LOGIC',
+          description: 'Validates model certainty before automatic approval',
+          status: 'PENDING',
+          config: { conditionExpression: '$json.confidenceScore >= 0.90' },
+        },
+      },
+      {
+        id: 'node-save-pg',
+        type: 'actionNode',
+        position: { x: 1380, y: 100 },
+        data: {
+          label: 'PostgreSQL Insert',
+          name: 'Auto-Approve Contract',
+          type: 'ACTION_POSTGRESQL',
+          category: 'ACTION',
+          description: 'Inserts vetted document metadata into approved_contracts',
+          status: 'PENDING',
+          config: { sqlQuery: 'INSERT INTO approved_contracts (doc_id, status) VALUES ($json.docId, "APPROVED");' },
+        },
+      },
+      {
+        id: 'node-human-review',
+        type: 'actionNode',
+        position: { x: 1380, y: 320 },
+        data: {
+          label: 'Slack Notification',
+          name: 'Manual Legal Review',
+          type: 'ACTION_SLACK',
+          category: 'ACTION',
+          description: 'Alerts legal team for manual signoff on ambiguous clause',
+          status: 'PENDING',
+          config: { slackChannel: '#legal-contracts', slackMessage: '⚠️ Document {{ $json.docId }} requires manual attorney inspection.' },
+        },
+      },
+    ],
+    edges: [
+      { id: 'e-doc-trans', source: 'node-doc-inbound', target: 'node-transform-chunk', type: 'smoothstep', animated: true, style: { stroke: '#06b6d4', strokeWidth: 2 } },
+      { id: 'e-trans-llm', source: 'node-transform-chunk', target: 'node-llm-call', type: 'smoothstep', animated: true, style: { stroke: '#10b981', strokeWidth: 2 } },
+      { id: 'e-llm-check', source: 'node-llm-call', target: 'node-confidence-check', type: 'smoothstep', animated: true, style: { stroke: '#f59e0b', strokeWidth: 2 } },
+      { id: 'e-check-save-true', source: 'node-confidence-check', sourceHandle: 'true', target: 'node-save-pg', type: 'smoothstep', animated: true, label: 'HIGH CONFIDENCE', labelStyle: { fill: '#10b981', fontWeight: 600, fontSize: 11 }, labelBgStyle: { fill: '#0a1612', stroke: '#10b981', rx: 6 }, style: { stroke: '#10b981', strokeWidth: 2.5 } },
+      { id: 'e-check-slack-false', source: 'node-confidence-check', sourceHandle: 'false', target: 'node-human-review', type: 'smoothstep', animated: true, label: 'MANUAL REVIEW', labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 }, labelBgStyle: { fill: '#1f0d14', stroke: '#f43f5e', rx: 6 }, style: { stroke: '#f43f5e', strokeWidth: 2 } },
+    ],
+  },
+  {
+    id: 'kyc-pipeline',
+    name: 'Customer Onboarding & KYC Pipeline',
+    description: 'Triggered when a new user registers: verifies identity credentials against national databases, logs record to PostgreSQL, and sends tailored email.',
+    category: 'Identity & Compliance',
+    tags: ['Auth', 'PostgreSQL', 'REST API', 'Transactional Email'],
+    nodes: [
+      {
+        id: 'node-kyc-trigger',
+        type: 'triggerNode',
+        position: { x: 80, y: 190 },
+        data: {
+          label: 'Webhook Trigger',
+          name: 'Account Signup Event',
+          type: 'TRIGGER_WEBHOOK',
+          category: 'TRIGGER',
+          description: 'Receives user.created event from flowforge-auth',
+          status: 'READY',
+          config: { webhookPath: '/webhooks/v1/auth-events' },
+          lastOutput: { userId: 'usr_77192', email: 'vinit@example.com', country: 'US' },
+        },
+      },
+      {
+        id: 'node-kyc-verify',
+        type: 'actionNode',
+        position: { x: 420, y: 190 },
+        data: {
+          label: 'HTTP Verification',
+          name: 'Passbase / Persona KYC',
+          type: 'ACTION_HTTP',
+          category: 'ACTION',
+          description: 'Submits user profile to KYC identity verification API',
+          status: 'PENDING',
+          config: { method: 'POST', url: 'https://api.withpersona.com/v1/inquiries' },
+        },
+      },
+      {
+        id: 'node-kyc-db',
+        type: 'actionNode',
+        position: { x: 760, y: 190 },
+        data: {
+          label: 'PostgreSQL Query',
+          name: 'Update User Verification',
+          type: 'ACTION_POSTGRESQL',
+          category: 'ACTION',
+          description: 'Flags verified status in auth_db',
+          status: 'PENDING',
+          config: { sqlQuery: 'UPDATE users SET kyc_verified = true WHERE id = $json.userId;' },
+        },
+      },
+      {
+        id: 'node-kyc-welcome',
+        type: 'actionNode',
+        position: { x: 1100, y: 190 },
+        data: {
+          label: 'Send Email',
+          name: 'Dispatch Welcome Kit',
+          type: 'ACTION_EMAIL',
+          category: 'ACTION',
+          description: 'Sends onboarding instructions to the newly validated user',
+          status: 'PENDING',
+          config: { emailTo: '{{ $json.email }}', emailSubject: 'Welcome to FlowForge Enterprise' },
+        },
+      },
+    ],
+    edges: [
+      { id: 'e-kyc-1-2', source: 'node-kyc-trigger', target: 'node-kyc-verify', type: 'smoothstep', animated: true, style: { stroke: '#06b6d4', strokeWidth: 2 } },
+      { id: 'e-kyc-2-3', source: 'node-kyc-verify', target: 'node-kyc-db', type: 'smoothstep', animated: true, style: { stroke: '#10b981', strokeWidth: 2 } },
+      { id: 'e-kyc-3-4', source: 'node-kyc-db', target: 'node-kyc-welcome', type: 'smoothstep', animated: true, style: { stroke: '#8b5cf6', strokeWidth: 2 } },
     ],
   },
 ];

@@ -49,14 +49,15 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
         left: 280,
         right: 0,
         height: isOpen ? 260 : 40,
-        background: 'rgba(9, 13, 20, 0.98)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'var(--bg-glass-elevated)',
+        borderTop: '1px solid var(--border-subtle)',
         backdropFilter: 'blur(20px)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 14,
-        transition: 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.7)',
+        transition: 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease',
+        boxShadow: 'var(--shadow-lg)',
+        color: 'var(--text-primary)',
       }}
     >
       {/* Console Bar Header */}

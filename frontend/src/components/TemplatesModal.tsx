@@ -22,7 +22,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
+        background: 'rgba(0, 0, 0, 0.7)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
@@ -33,12 +33,16 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
     >
       <div
         style={{
-          width: 580,
-          background: 'linear-gradient(180deg, #131b2a 0%, #0d121c 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          width: 620,
+          maxHeight: '85vh',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-medium)',
           borderRadius: 16,
           padding: '24px',
-          boxShadow: '0 16px 48px rgba(0,0,0,0.8)',
+          boxShadow: 'var(--shadow-lg)',
+          display: 'flex',
+          flexDirection: 'column',
+          color: 'var(--text-primary)',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -59,18 +63,18 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
               <Sparkles size={18} color="#06b6d4" />
             </div>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', margin: 0 }}>Workflow Templates</h3>
-              <div style={{ fontSize: 12, color: '#94a3b8' }}>Select a pre-configured architecture blueprint</div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Workflow Blueprints</h3>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Select a pre-configured architecture template</div>
             </div>
           </div>
 
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: 8,
-              color: '#cbd5e1',
+              color: 'var(--text-secondary)',
               padding: '6px',
               cursor: 'pointer',
               display: 'flex',
@@ -80,7 +84,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', paddingRight: 4 }}>
           {DEMO_TEMPLATES.map(template => (
             <div
               key={template.id}
@@ -90,36 +94,52 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
                 onClose();
               }}
               style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: 12,
                 padding: '16px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
+                e.currentTarget.style.borderColor = '#06b6d4';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.background = 'var(--bg-card)';
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#f8fafc' }}>{template.name}</span>
-                <span style={{ fontSize: 11, color: '#06b6d4', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  Load Template <ArrowRight size={12} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{template.name}</span>
+                  {template.category && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                        background: 'rgba(6, 182, 212, 0.12)',
+                        color: '#0284c7',
+                      }}
+                    >
+                      {template.category}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: 11, color: '#06b6d4', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                  Load Blueprint <ArrowRight size={12} />
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.4, margin: 0 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
                 {template.description}
               </p>
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, color: '#cbd5e1' }}>
+                <span style={{ fontSize: 10, background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '2px 6px', borderRadius: 4, color: 'var(--text-secondary)' }}>
                   {template.nodes.length} Nodes
                 </span>
-                <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, color: '#cbd5e1' }}>
+                <span style={{ fontSize: 10, background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '2px 6px', borderRadius: 4, color: 'var(--text-secondary)' }}>
                   {template.edges.length} Connections
                 </span>
               </div>
