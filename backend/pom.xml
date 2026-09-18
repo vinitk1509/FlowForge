@@ -20,6 +20,7 @@
 		<module>flowforge-common</module>
 		<module>flowforge-auth</module>
 		<module>flowforge-workflow</module>
+		<module>flowforge-execution</module>
 		<module>flowforge-gateway</module>
 	</modules>
 
